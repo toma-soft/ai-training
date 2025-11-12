@@ -17,6 +17,7 @@ class MiniGPT(nn.Module):
         self.blocks = nn.ModuleList([Block(cfg) for _ in range(cfg.n_layer)])
         self.ln_f = nn.LayerNorm(cfg.d_model)
         self.lm_head = nn.Linear(cfg.d_model, cfg.vocab_size, bias=False)
+        self.lm_head.weight = self.tok.emb.weight
 
     def forward(self, idx):
         assert idx.size(1) <= self.cfg.block_size, "sequence too long"
@@ -25,6 +26,21 @@ class MiniGPT(nn.Module):
             x = blk(x)
         x = self.ln_f(x)
         return self.lm_head(x)
+
+    def compute_loss(self, idx):
+        """
+        Next-token language modeling loss (CrossEntropy).
+        We train to predict token t+1 z danych do t.
+        """
+        logits = self(idx)                  # (B, T, V)
+        # shift: porównujemy do przyszłości
+        targets = idx[:, 1:].contiguous()   # (B, T-1)
+        logits = logits[:, :-1, :].contiguous()  # (B, T-1, V)
+
+        B, Tm1, V = logits.shape
+        logits = logits.view(B * Tm1, V)
+        targets = targets.view(B * Tm1)
+        return F.cross_entropy(logits, targets)
 
     @torch.no_grad()
     def generate(self, idx, max_new_tokens=50, top_k=None, top_p=None):
