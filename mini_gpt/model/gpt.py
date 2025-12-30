@@ -62,7 +62,8 @@ class MiniGPT(nn.Module):
                 mask[:, 0] = False
                 sorted_probs[mask] = 0
                 sorted_probs = sorted_probs / sorted_probs.sum(dim=-1, keepdim=True)
-                next_token = torch.multinomial(sorted_probs, 1)
+                # next_token = torch.multinomial(sorted_probs, 1)
+                next_token = torch.argmax(probs, dim=-1, keepdim=True)
                 next_token = sorted_idx.gather(1, next_token)
             else:
                 next_token = torch.multinomial(probs, 1)

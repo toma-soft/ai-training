@@ -10,8 +10,10 @@ cfg = GPTConfig(
     d_model=64, d_ff=256, block_size=32, dropout=0.0
 )
 model = MiniGPT(cfg)
-
-x = torch.tensor([tok.encode("hello")], dtype=torch.long)  # (1,5)
+input_txt = "hello w"
+encoded = tok.encode(input_txt)
+x = torch.tensor([encoded], dtype=torch.long)  # (1,5)
+B, T = x.shape
 logits = model(x)
-assert logits.shape == (1, 5, tok.vocab_size)
+assert logits.shape == (B, T, tok.vocab_size)
 print("logits OK:", logits.shape)

@@ -30,20 +30,31 @@ def main():
         "Puppy is a tiny dog\n"
         "Dogs do not like cats\n"
         "Cats do not like dogs\n"
+        "Cat Cat Cat - are you drunk buddy ?"
+        "Cat Cat Cat Cat - are you drunk buddy ?"
+        "Are you drunk buddy ?"
+        "You are drunk buddy!"
+        "buddy"
+        "buddy buddy buddy buddy buddy"
+        "buddy"
+        "buddy"
+        "buddy"
+        "buddy"
+        "buddy"
     )
     tok = CharTokenizer(text)
 
     cfg = GPTConfig(
         vocab_size=tok.vocab_size,
         n_layer=2, n_head=2,
-        d_model=64, d_ff=256,
+        d_model=256, d_ff=256,
         block_size=32, dropout=0.0
     )
     model = MiniGPT(cfg)
 
     # hiperparametry
     lr = 1e-3
-    steps = 200
+    steps = 300
     batch_size = 32
 
     opt = torch.optim.AdamW(model.parameters(), lr=lr)
@@ -60,44 +71,22 @@ def main():
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         opt.step()
 
-        if step % 50 == 0 or step == 1:
+        if step % 100 == 0 or step == 1:
             print(f"step {step:4d} | loss {loss.item():.4f}")
 
     # szybka próbka po treningu
     model.eval()
     with torch.no_grad():
-        prompt = "Cat "
-        start = torch.tensor([tok.encode(prompt)], dtype=torch.long)
-        out = model.generate(start, max_new_tokens=len(text), top_k=None)
-        print("sample:\n", tok.decode(out[0].tolist()))
+        # TEST HALUCYNACJI: MiniGPT próbuje odpowiedzieć na pytanie matematyczne
+        print("\n=== TEST HALUCYNACJI MATEMATYCZNEJ ===")
+        test_prompt = "Cat Cat Cat"
+        ids = tok.encode(test_prompt)
+        x = torch.tensor([ids], dtype=torch.long)
 
-    # szybka próbka po treningu – JEDNA odpowiedź
-    # model.eval()
-    # with torch.no_grad():
-    #     # możliwe prompty – wszystkie znaki są w tekście
-    #     prompts = ["Cat ", "Dog ", "Kitty ", "Puppy "]
-    #     prompt = random.choice(prompts)
-
-    #     prompt_ids = tok.encode(prompt)
-    #     start = torch.tensor([prompt_ids], dtype=torch.long)
-
-    #     # generujemy trochę tokenów, ale użyjemy tylko do pierwszego '\n'
-    #     out = model.generate(start, max_new_tokens=50, top_k=None)[0].tolist()
-
-    #     # bierzemy tylko to, co model dopisał PO predykacie
-    #     gen_ids = out[len(prompt_ids):]
-
-    #     # ucinamy na pierwszym znaku nowej linii (jeśli w ogóle wystąpi)
-    #     line_ids = []
-    #     for tid in gen_ids:
-    #         ch = tok.itos[tid]
-    #         if ch == "\n":
-    #             break
-    #         line_ids.append(tid)
-
-    #     answer = prompt + tok.decode(line_ids)
-    #     print("prompt:", repr(prompt))
-    #     print("answer:", repr(answer))
+        out = model.generate(x, max_new_tokens=30, top_k=None)[0].tolist()
+        answer = tok.decode(out[len(ids):])  # wszystko po pytaniu
+        print("prompt:", repr(test_prompt))
+        print("model answer:", repr(answer))
 
 
 if __name__ == "__main__":
